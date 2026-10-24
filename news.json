@@ -1,0 +1,99 @@
+{
+  "asOf": "Stand: Börsenschluss Fr., 23.10.2026",
+  "date": "2026-10-24",
+  "dates": [
+    {
+      "date": "Mo 26.10.",
+      "label": "ifo-Geschäftsklima"
+    },
+    {
+      "date": "Do 29.10.",
+      "label": "EZB-Zinsentscheid, 14:15"
+    },
+    {
+      "date": "nächste Woche",
+      "label": "Fed-Zinsentscheid"
+    }
+  ],
+  "germany": [
+    {
+      "source": "wallstreet-online / finanzen.net",
+      "text": "Der DAX schloss am Freitag bei rund 25.180 Punkten, knapp 0,9 % im Minus. Belastet haben hohe Ölpreise und Sorgen um Frankreichs Staatsfinanzen. Deutsche Telekom und Siemens Energy gehörten zu den größten Verlierern.",
+      "title": "DAX beendet die Woche im Minus",
+      "url": "https://www.wallstreet-online.de/nachricht/21569819-dax-faehrt-achterbahn"
+    },
+    {
+      "source": "LBBW / FXStreet",
+      "text": "Am 29. Oktober verkündet die EZB ihren Zinsentscheid. Nach Erhöhungen im Juni und September liegt der Einlagensatz bei 2,50 %, Händler rechnen überwiegend mit einer Pause. Frankreichs Schulden setzen die Notenbank unter Druck: Die zehnjährige Rendite liegt über 5 %.",
+      "title": "EZB entscheidet am Donnerstag über die Zinsen",
+      "url": "https://www.lbbw.de/artikel/maerkte-verstehen/termine-oktober-2026_anjnmvdjip_d.html"
+    },
+    {
+      "source": "ifo Institut",
+      "text": "Das ifo-Institut erwartet für 2026 ein BIP-Plus von 1,4 % und für 2027 von 1,2 %, getragen von Staatsausgaben und besseren Industrieaufträgen. Als Risiken nennt es den wieder aufgeflammten Iran-Krieg und Niedrigwasser auf deutschen Flüssen.",
+      "title": "ifo hebt die Wachstumsprognose an",
+      "url": "https://www.ifo.de/en/publications/2026/article-journal/ifo-konjunkturprognose-herbst-2026"
+    }
+  ],
+  "headline": "Ölpreis auf Mehrjahreshoch drückt die Börsen",
+  "metrics": [
+    {
+      "change": "−0,9 %",
+      "dir": "down",
+      "label": "DAX",
+      "value": "25.182"
+    },
+    {
+      "change": "2. Verlustwoche",
+      "dir": "down",
+      "label": "S&P 500",
+      "value": "−0,5 %"
+    },
+    {
+      "change": "Freitag",
+      "dir": "down",
+      "label": "Dow Jones",
+      "value": "−1,2 %"
+    },
+    {
+      "change": "+3,1 % · Hoch seit 2022",
+      "dir": "",
+      "label": "Brent",
+      "value": "116,72 $"
+    },
+    {
+      "change": "+0,03 Pp.",
+      "dir": "",
+      "label": "US-Anleihe 10J",
+      "value": "4,99 %"
+    },
+    {
+      "change": "Entscheid am 29.10.",
+      "dir": "",
+      "label": "EZB-Einlagensatz",
+      "value": "2,50 %"
+    }
+  ],
+  "updatedAt": "2026-10-24T20:00:00+02:00",
+  "why": "Hohe Ölpreise machen Tanken und Heizen teurer und halten die Inflation oben. Solange die Leitzinsen hoch bleiben, gibt es aufs Tagesgeld ordentlich Zinsen, Kredite bleiben dagegen teuer.",
+  "world": [
+    {
+      "source": "BNN Bloomberg / AP",
+      "text": "Der Ölpreis legte am Freitag um 3,1 % zu und erreichte den höchsten Stand seit Juni 2022. WTI schloss knapp über 103 Dollar. Energiewerte wie Chevron und ConocoPhillips gewannen deutlich.",
+      "title": "Brent steigt auf 116,72 Dollar",
+      "url": "https://www.bnnbloomberg.ca/markets/2026/10/23/wall-street-mostly-loses-ground-under-pressure-from-rising-oil-prices/"
+    },
+    {
+      "source": "Washington Times / AP",
+      "text": "Der S&P 500 verlor 0,5 %, der Dow Jones 1,2 % und der Nasdaq 0,2 %. Fast drei von vier Werten im S&P 500 fielen. Chipwerte wie Micron, Intel und AMD hielten dagegen.",
+      "title": "Wall Street mit zweiter Verlustwoche in Folge",
+      "url": "https://www.washingtontimes.com/news/2026/oct/23/wall-street-loses-ground-friday-pressure-rising-oil-prices/"
+    },
+    {
+      "source": "Washington Times / AP",
+      "text": "Wetten auf eine Zinserhöhung wegen ölgetriebener Inflation sind fast verschwunden, Futures sehen die Chance bei rund 5 %. Die Rendite zehnjähriger US-Staatsanleihen stieg auf 4,99 %.",
+      "title": "Fed-Sitzung nächste Woche: Zinspause erwartet",
+      "url": "https://www.washingtontimes.com/news/2026/oct/23/wall-street-loses-ground-friday-pressure-rising-oil-prices/"
+    }
+  ]
+}

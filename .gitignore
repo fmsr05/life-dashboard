@@ -1,0 +1,3 @@
+*backup*.json
+*.tmp.js
+node_modules/

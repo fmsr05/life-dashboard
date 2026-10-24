@@ -1,0 +1,21 @@
+{
+  "name": "Life Dashboard",
+  "short_name": "Life",
+  "description": "Kalender, Mails, Finanz-Briefing, Noten, Budget, Training und Gewicht an einem Ort.",
+  "lang": "de",
+  "start_url": "./#heute",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EDF1EF",
+  "theme_color": "#0E1916",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Training eintragen", "url": "./#training" },
+    { "name": "Gewicht eintragen", "url": "./#koerper" }
+  ]
+}
