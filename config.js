@@ -3,5 +3,5 @@
    Sie ist nicht geheim und darf öffentlich im Code stehen. */
 window.CONFIG = {
   GOOGLE_CLIENT_ID: "431330281847-q94stoislirmvtic87339eslpfrfjb4u.apps.googleusercontent.com",
-  VERSION: "1.0.1",
+  VERSION: "1.0.2",
 };

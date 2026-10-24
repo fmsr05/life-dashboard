@@ -217,6 +217,7 @@ RENDER.heute = () => {
       <div class="sub">${todayN === null ? `${prefs().semester}. Semester Wirtschaftsinformatik` : todayN ? `Heute noch ${todayN} Termin${todayN === 1 ? "" : "e"}.` : "Heute keine Termine mehr."}${nextExam ? ` Nächste Klausur ${countdown(parseYmd(nextExam.date))}.` : ""}</div></div>
       <div class="head-actions"><button class="btn" data-act="settings" aria-label="Einstellungen">${ICON.gear}</button><button class="btn" data-act="wo-new">${ICON.plus} Training</button><button class="btn" data-act="quick-weight">${ICON.plus} Gewicht</button></div></header>
     <div class="weekstrip" role="group" aria-label="Diese Woche">${strip}</div>
+    ${installPrompt && !matchMedia("(display-mode: standalone)").matches ? `<div class="banner"><span>Leg das Dashboard als <b>App auf deinen Startbildschirm</b>.</span><button class="btn btn-primary btn-sm" data-act="install">App installieren</button></div>` : ""}
     ${exampleBanner("all")}
     <div class="kpis">
       ${kpi("uni", "Notenschnitt", ex.avg === null ? "–" : gradeStr(ex.avg, 2), nextExam ? `${esc(nextExam.name)} ${countdown(parseYmd(nextExam.date))}` : `${fmtMax(ex.ects, 1)} / ${TOTAL_ECTS} ECTS`)}

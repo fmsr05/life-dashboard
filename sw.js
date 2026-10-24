@@ -1,5 +1,5 @@
 /* Life Dashboard – Service Worker: App-Dateien offline verfügbar, Briefing immer frisch */
-const CACHE = "ld-v1.0.1";
+const CACHE = "ld-v1.0.2";
 const SHELL = ["./", "index.html", "manifest.json", "config.js", "core.js", "charts.js", "connect.js", "settings.js", "view-today.js", "view-uni.js", "view-money.js", "view-train.js", "view-body.js", "main.js", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

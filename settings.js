@@ -2,8 +2,8 @@
 "use strict";
 
 let installPrompt = null;
-window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; });
-window.addEventListener("appinstalled", () => { installPrompt = null; toast("App installiert"); });
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; invalidate(); });
+window.addEventListener("appinstalled", () => { installPrompt = null; invalidate(); toast("App installiert"); });
 
 ACT.settings = () => {
   let last = null;
