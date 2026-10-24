@@ -91,8 +91,9 @@ function calMeta(c, i, primaryId) {
   if (id === primaryId || c.primary) return { color: "var(--s1)", short: "Privat" };
   return { color: ["var(--s5)", "var(--s2)", "var(--s6)"][i % 3], short: name };
 }
-const calByCal = {};
-let calWindowKey = "", calBusy = false;
+const calByCal = {};            // calId -> { eventId: event }
+let calRanges = [];             // geladene Zeiträume [start, end] in ms
+let calWindowKey = "", calBusy = false, calGen = 0;
 function calWindow() {
   const mon = startOfWeek(new Date());
   return { start: addDays(mon, -7), end: addDays(mon, 14), key: ymd(mon) };
@@ -111,11 +112,26 @@ function normEvent(ev, cal) {
 }
 function rebuildEvents() {
   const hidden = new Set(prefs().hiddenCals || []);
-  S.cal.events = Object.entries(calByCal).filter(([id]) => !hidden.has(id)).flatMap(([, list]) => list).sort((a, b) => a.start - b.start || (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0));
+  S.cal.events = Object.entries(calByCal).filter(([id]) => !hidden.has(id)).flatMap(([, m]) => Object.values(m)).sort((a, b) => a.start - b.start || (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0));
+}
+const rangeLoaded = (a, b) => calRanges.some(([x, y]) => x <= +a && y >= +b);
+async function fetchRange(start, end, gen) {
+  await Promise.all(S.cal.calendars.map(async (cal) => {
+    const q = new URLSearchParams({ timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "500" });
+    try {
+      const r = await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?${q}`);
+      if (gen !== calGen) return;
+      const m = calByCal[cal.id] || (calByCal[cal.id] = {});
+      for (const id of Object.keys(m)) { const e = m[id]; if (e.start < end && e.end > start) delete m[id]; }
+      for (const x of r.items || []) { const e = normEvent(x, cal); if (e) m[e.id] = e; }
+    } catch (e) { if (e.code === "expired") throw e; }
+  }));
+  if (gen === calGen) calRanges.push([+start, +end]);
 }
 async function startCalendar() {
   if (S.google !== "ok" || calBusy) return;
   calBusy = true;
+  const gen = ++calGen;
   if (!S.cal.events.length) S.cal.state = "loading";
   S.cal.error = null; invalidate();
   try {
@@ -123,19 +139,27 @@ async function startCalendar() {
     const cals = list.items || [];
     const primaryId = (cals.find((c) => c.primary) || {}).id;
     S.cal.calendars = cals.map((c, i) => ({ id: c.id, name: c.summaryOverride || c.summary || c.id, ...calMeta(c, i, primaryId) }));
+    for (const k of Object.keys(calByCal)) delete calByCal[k];
+    calRanges = [];
     const w = calWindow(); calWindowKey = w.key;
-    await Promise.all(S.cal.calendars.map(async (cal) => {
-      const q = new URLSearchParams({ timeMin: w.start.toISOString(), timeMax: w.end.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "250" });
-      try {
-        const r = await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?${q}`);
-        calByCal[cal.id] = (r.items || []).map((x) => normEvent(x, cal)).filter(Boolean);
-      } catch (e) { if (e.code === "expired") throw e; }
-    }));
+    await fetchRange(w.start, w.end, gen);
+    const v = calViewRange();
+    if (!rangeLoaded(v.start, v.end)) await fetchRange(v.start, v.end, gen);
     rebuildEvents();
     S.cal.state = "ready"; S.cal.storedAt = Date.now(); S.cal.stale = false;
   } catch (e) {
     if (e.code !== "expired") { if (S.cal.events.length) S.cal.stale = true; else { S.cal.state = "error"; S.cal.error = apiError(CAL, e); } }
   } finally { calBusy = false; invalidate(); }
+}
+/* Lädt nach, wenn die Ansicht einen Zeitraum zeigt, der noch nicht geladen ist */
+async function ensureViewRange() {
+  if (S.google !== "ok" || calBusy || !S.cal.calendars.length) return;
+  const v = calViewRange();
+  if (rangeLoaded(v.start, v.end)) return;
+  calBusy = true; S.cal.rangeLoading = true; invalidate();
+  try { await fetchRange(v.start, v.end, calGen); rebuildEvents(); }
+  catch (_) {}
+  finally { calBusy = false; S.cal.rangeLoading = false; invalidate(); }
 }
 const eventsOn = (day) => {
   const a = startOfDay(day), b = addDays(a, 1);

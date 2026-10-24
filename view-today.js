@@ -17,33 +17,113 @@ function evRow(e, now) {
     <div class="grow"><div class="t clamp1">${esc(e.title)}</div><div class="s">${running ? "<b>Läuft gerade</b> · " : soon ? `<b>In ${Math.max(1, Math.round((e.start - now) / 60e3))} Min.</b> · ` : ""}${meta || esc(e.calShort)}</div></div>`;
   return e.link ? `<a class="row rowlink ${running ? "now-ev" : ""}" href="${esc(e.link)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="row ${running ? "now-ev" : ""}">${inner}</div>`;
 }
+/* Ansicht: Tag, Woche oder Monat; anchor = gezeigter Tag (ymd) */
+const CAL_MODES = { tag: "Tag", woche: "Woche", monat: "Monat" };
+function calView() {
+  if (!S.calView) {
+    let mode = "tag";
+    try { mode = localStorage.getItem("ld:calmode") || "tag"; } catch (_) {}
+    S.calView = { mode: CAL_MODES[mode] ? mode : "tag", anchor: ymd(new Date()), pick: null };
+  }
+  return S.calView;
+}
+function calViewRange() {
+  const v = calView(), a = parseYmd(v.anchor);
+  if (v.mode === "woche") { const s = startOfWeek(a); return { start: s, end: addDays(s, 7) }; }
+  if (v.mode === "monat") { const s = startOfWeek(new Date(a.getFullYear(), a.getMonth(), 1)); return { start: s, end: addDays(s, 42) }; }
+  return { start: startOfDay(a), end: addDays(startOfDay(a), 1) };
+}
+function calTitle() {
+  const v = calView(), a = parseYmd(v.anchor);
+  if (v.mode === "woche") { const s = startOfWeek(a), e = addDays(s, 6); return `KW ${isoWeek(s).week} · ${s.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}–${e.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}`; }
+  if (v.mode === "monat") return a.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  return relDay(a) === fmtDate(a) ? fmtDate(a, { weekday: "long", day: "numeric", month: "long" }) : relDay(a);
+}
+const evTime = (e) => (e.allDay ? "ganztägig" : fmtTime(e.start));
+function dayAgenda(day, now, emptyText) {
+  const list = eventsOn(day);
+  const hol = list.filter((e) => e.holiday), evs = list.filter((e) => !e.holiday);
+  return (hol.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${hol.map((h) => `<span class="chip bad">${esc(h.title)}</span>`).join("")}</div>` : "")
+    + (evs.length ? `<div class="list">${evs.map((e) => evRow(e, now)).join("")}</div>` : `<div class="muted" style="padding:6px 0 4px">${esc(emptyText)}</div>`);
+}
+function weekGrid(now) {
+  const s = startOfWeek(parseYmd(calView().anchor));
+  return `<div class="wk">${Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(s, i), list = eventsOn(d), isToday = ymd(d) === ymd(now);
+    const hol = list.filter((e) => e.holiday), evs = list.filter((e) => !e.holiday);
+    return `<div class="wk-day ${isToday ? "today" : ""} ${d < startOfDay(now) ? "past" : ""}">
+      <button class="wk-h" data-act="cal-open-day" data-d="${ymd(d)}" aria-label="${fmtDate(d, { weekday: "long", day: "numeric", month: "long" })} als Tag öffnen"><span>${DOW[d.getDay()]}</span><b>${d.getDate()}</b></button>
+      <div class="wk-evs">${hol.map((h) => `<span class="chip bad" style="align-self:flex-start">${esc(h.title)}</span>`).join("")}
+        ${evs.length ? evs.map((e) => `<a class="wk-ev" style="--c:${e.color}" ${e.link ? `href="${esc(e.link)}" target="_blank" rel="noopener"` : ""}><span class="wk-t">${evTime(e)}</span><span class="wk-n">${esc(e.title)}</span></a>`).join("") : hol.length ? "" : `<span class="muted small">frei</span>`}
+      </div></div>`;
+  }).join("")}</div>`;
+}
+function monthGrid(now) {
+  const v = calView(), a = parseYmd(v.anchor), month = a.getMonth();
+  const s = startOfWeek(new Date(a.getFullYear(), month, 1));
+  const pick = v.pick || (month === now.getMonth() && a.getFullYear() === now.getFullYear() ? ymd(now) : ymd(new Date(a.getFullYear(), month, 1)));
+  const head = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => `<div class="mo-hd">${d}</div>`).join("");
+  const cells = Array.from({ length: 42 }, (_, i) => {
+    const d = addDays(s, i), key = ymd(d), list = eventsOn(d);
+    const evs = list.filter((e) => !e.holiday), hol = list.some((e) => e.holiday);
+    const cls = [d.getMonth() !== month ? "out" : "", key === ymd(now) ? "today" : "", key === pick ? "sel" : ""].join(" ");
+    return `<button class="mo-c ${cls}" data-act="cal-pick" data-d="${key}" aria-label="${fmtDate(d, { weekday: "long", day: "numeric", month: "long" })}: ${evs.length} Termine">
+      <span class="mo-n">${d.getDate()}</span>
+      <span class="mo-dots">${hol ? '<i style="background:var(--bad)"></i>' : ""}${evs.slice(0, 4).map((e) => `<i style="background:${e.color}"></i>`).join("")}</span>
+      <span class="mo-evs">${evs.slice(0, 3).map((e) => `<span class="mo-ev" style="--c:${e.color}">${esc(e.title)}</span>`).join("")}${evs.length > 3 ? `<span class="mo-more">+${evs.length - 3}</span>` : ""}</span>
+    </button>`;
+  }).join("");
+  const pd = parseYmd(pick);
+  return `<div class="mo">${head}${cells}</div>
+    <div class="daylabel" style="padding-top:14px">${esc(relDay(pd) === fmtDate(pd) ? fmtDate(pd, { weekday: "long", day: "numeric", month: "long" }) : relDay(pd))}</div>
+    ${dayAgenda(pd, now, "Keine Termine an diesem Tag.")}`;
+}
 function calendarCard() {
-  const now = new Date();
-  const sel = S.selDay ? parseYmd(S.selDay) : startOfDay(now);
-  const title = relDay(sel) === fmtDate(sel) ? fmtDate(sel, { weekday: "long", day: "numeric", month: "long" }) : relDay(sel);
+  const now = new Date(), v = calView();
   const actions = S.google === "ok" ? `<button class="icon-btn" data-act="cal-settings" aria-label="Kalender auswählen">${ICON.edit}</button><button class="icon-btn" data-act="cal-refresh" aria-label="Kalender neu laden">${ICON.refresh}</button>` : "";
+  const controls = `<div class="cal-ctl">
+      <div class="seg" role="group" aria-label="Ansicht">${Object.entries(CAL_MODES).map(([k, l]) => `<button data-act="cal-mode" data-m="${k}" aria-pressed="${v.mode === k}">${l}</button>`).join("")}</div>
+      <div class="cal-nav"><button class="icon-btn" data-act="cal-nav" data-d="-1" aria-label="Zurück">‹</button><button class="btn btn-sm" data-act="cal-nav" data-d="0">Heute</button><button class="icon-btn" data-act="cal-nav" data-d="1" aria-label="Weiter">›</button></div>
+    </div>`;
   let body = "";
   if (S.cal.error && !S.cal.events.length) body = `<div class="note warn">${esc(S.cal.error.text)}</div>${S.cal.error.canAllow ? `<div style="margin-top:10px"><button class="btn btn-sm btn-primary" data-act="cal-allow">Mit Google verbinden</button></div>` : ""}`;
   else if (S.cal.state === "loading" && !S.cal.events.length) body = loadingRow("Kalender lädt …");
   else {
-    const list = eventsOn(sel);
-    const hol = list.filter((e) => e.holiday);
-    const evs = list.filter((e) => !e.holiday);
-    body = (hol.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${hol.map((h) => `<span class="chip bad">${esc(h.title)}</span>`).join("")}</div>` : "")
-      + (evs.length ? `<div class="list">${evs.map((e) => evRow(e, now)).join("")}</div>`
-        : `<div class="muted" style="padding:6px 0 4px">${dayDiff(now, sel) < 0 ? "An diesem Tag stand nichts im Kalender." : "Nichts im Kalender. Gute Gelegenheit für Deep Work oder Gym."}</div>`);
-    const end = addDays(startOfDay(sel), 1);
-    const next = S.cal.events.filter((e) => !e.holiday && e.start >= end).slice(0, 4);
-    if (next.length) {
-      let lastDay = "";
-      body += `<div class="daylabel" style="padding-top:16px">Als Nächstes</div><div class="list">${next.map((e) => { const dl = relDay(e.start); const lbl = dl !== lastDay ? dl : ""; lastDay = dl; return `${lbl ? `<div class="daylabel" style="padding-top:8px">${esc(lbl)}</div>` : ""}${evRow(e, now)}`; }).join("")}</div>`;
+    if (v.mode === "woche") body = weekGrid(now);
+    else if (v.mode === "monat") body = monthGrid(now);
+    else {
+      const sel = parseYmd(v.anchor);
+      body = dayAgenda(sel, now, dayDiff(now, sel) < 0 ? "An diesem Tag stand nichts im Kalender." : "Nichts im Kalender. Gute Gelegenheit für Deep Work oder Gym.");
+      const end = addDays(startOfDay(sel), 1);
+      const next = S.cal.events.filter((e) => !e.holiday && e.start >= end).slice(0, 4);
+      if (next.length) {
+        let lastDay = "";
+        body += `<div class="daylabel" style="padding-top:16px">Als Nächstes</div><div class="list">${next.map((e) => { const dl = relDay(e.start); const lbl = dl !== lastDay ? dl : ""; lastDay = dl; return `${lbl ? `<div class="daylabel" style="padding-top:8px">${esc(lbl)}</div>` : ""}${evRow(e, now)}`; }).join("")}</div>`;
+      }
     }
     if (S.cal.stale) body += `<p class="muted small" style="margin:10px 0 0">Kalender gerade nicht erreichbar, Stand ${freshness(S.cal.storedAt)}.</p>`;
   }
-  const n = S.cal.state === "ready" ? eventsOn(sel).filter((e) => !e.holiday).length : null;
-  return card(esc(title), body, { eyebrow: `Kalender${n !== null ? ` · ${n} Termin${n === 1 ? "" : "e"}` : ""}`, actions });
+  const r = calViewRange();
+  const n = S.cal.state === "ready" ? S.cal.events.filter((e) => !e.holiday && e.start < r.end && e.end > r.start).length : null;
+  const eyebrow = `Kalender${S.cal.rangeLoading ? " · lädt …" : n !== null ? ` · ${n} Termin${n === 1 ? "" : "e"}` : ""}`;
+  return card(esc(calTitle()), controls + body, { eyebrow, actions, cls: v.mode === "tag" ? "" : "span2" });
 }
-ACT.day = (el) => { S.selDay = el.dataset.d === ymd(new Date()) ? null : el.dataset.d; renderView("heute", true); };
+function calSet(patch) {
+  Object.assign(calView(), patch);
+  try { localStorage.setItem("ld:calmode", calView().mode); } catch (_) {}
+  renderView("heute", true);
+  ensureViewRange();
+}
+ACT["cal-mode"] = (el) => calSet({ mode: el.dataset.m, pick: null });
+ACT["cal-nav"] = (el) => {
+  const v = calView(), d = Number(el.dataset.d), a = parseYmd(v.anchor);
+  if (d === 0) return calSet({ anchor: ymd(new Date()), pick: null });
+  const next = v.mode === "monat" ? new Date(a.getFullYear(), a.getMonth() + d, 1) : addDays(a, v.mode === "woche" ? 7 * d : d);
+  calSet({ anchor: ymd(next), pick: null });
+};
+ACT["cal-pick"] = (el) => calSet({ pick: el.dataset.d });
+ACT["cal-open-day"] = (el) => calSet({ mode: "tag", anchor: el.dataset.d, pick: null });
+ACT.day = (el) => calSet({ mode: "tag", anchor: el.dataset.d, pick: null });
 ACT["cal-settings"] = () => {
   const hidden = new Set(prefs().hiddenCals || []);
   openSheet(`${sheetHead("Welche Kalender?", "Kalender")}
@@ -64,7 +144,7 @@ function mailCard() {
       <div class="clamp1" style="font-size:14px;${t.unread ? "font-weight:600" : ""}">${esc(t.subject)}</div><div class="s">${esc(t.snippet)}</div></div></a>`).join("")}</div>`;
   const unread = S.mail.threads.filter((t) => t.unread).length;
   const foot = S.mail.state === "ready" ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;flex-wrap:wrap"><a class="btn btn-sm" href="https://mail.google.com/" target="_blank" rel="noopener">${ICON.ext} Gmail öffnen</a><span class="muted small">${S.mail.stale ? "Gerade nicht erreichbar · " : ""}${freshness(S.mail.storedAt)}</span></div>` : "";
-  return card("Mails", `<div style="margin-bottom:10px">${seg}</div>${body}${foot}`, { eyebrow: `Gmail${S.mail.state === "ready" ? ` · ${unread} ungelesen` : ""}`, actions: S.google === "ok" ? `<button class="icon-btn" data-act="mail-refresh" aria-label="Mails neu laden">${ICON.refresh}</button>` : "" });
+  return card("Mails", `<div style="margin-bottom:10px">${seg}</div>${body}${foot}`, { eyebrow: `Gmail${S.mail.state === "ready" ? ` · ${unread} ungelesen` : ""}`, actions: S.google === "ok" ? `<button class="icon-btn" data-act="mail-refresh" aria-label="Mails neu laden">${ICON.refresh}</button>` : "", cls: calView().mode === "tag" ? "" : "span2" });
 }
 
 /* ---------- Finanz-Briefing ---------- */
@@ -202,7 +282,7 @@ RENDER.heute = () => {
     const d = addDays(ws, i), key = ymd(d), l = S.cal.events.length ? eventsOn(d) : [];
     const n = l.filter((e) => !e.holiday).length, hol = l.some((e) => e.holiday);
     const tr = S.workouts.some((w) => w.date === key);
-    const isToday = key === ymd(now), sel = S.selDay === key;
+    const isToday = key === ymd(now), sel = calView().mode === "tag" && calView().anchor === key && !isToday;
     return `<button class="wday ${isToday ? "today" : ""} ${sel ? "sel" : ""} ${d < startOfDay(now) ? "past" : ""}" data-act="day" data-d="${key}" aria-label="${fmtDate(d, { weekday: "long", day: "numeric", month: "long" })}: ${n} Termine${tr ? ", Training" : ""}">
       <span class="dn">${DOW[d.getDay()]}</span><span class="dd">${d.getDate()}</span>
       <span class="dots">${Array.from({ length: Math.min(3, n) }, () => "<i></i>").join("")}${hol ? '<i class="h"></i>' : ""}${tr ? '<i class="t"></i>' : ""}</span></button>`;
